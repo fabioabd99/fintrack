@@ -3,6 +3,10 @@
 Personal finance app. The home screen shows how much you can spend until your next payday, after
 the bills that are still due.
 
+**Live demo:** https://tillpay.vercel.app (click **Open the demo**, no sign-up needed)
+
+![Tillpay home screen](.github/assets/home.png)
+
 Features: accounts, transactions, transfers, categories, monthly budgets, recurring transactions,
 reports and CSV export.
 
