@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: tillpay-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tillpay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tillpay}
+      POSTGRES_DB: tillpay
+    # localhost only, 5433 to avoid clashing with a local Postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - tillpay-pgdata:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tillpay -d tillpay"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tillpay-pgdata:

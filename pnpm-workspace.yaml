@@ -1,3 +1,9 @@
 allowBuilds:
+  esbuild: true
   sharp: false
   unrs-resolver: false
+
+# drizzle-kit's legacy loader pins an esbuild with a dev-server advisory
+# (GHSA-67mh-4wv8-2f99). Development only, but no reason to keep it.
+overrides:
+  "@esbuild-kit/core-utils>esbuild": "^0.25.0"
