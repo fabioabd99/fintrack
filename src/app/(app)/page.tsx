@@ -11,6 +11,8 @@ import { CalendarClock, Clock, Flame, PieChart, Tag, Target } from "lucide-react
 import { Amount } from "@/components/amount";
 import { CategoryIcon } from "@/components/category-icon";
 import { SpendHero } from "@/components/home/spend-hero";
+import { SalaryPrompt } from "@/components/salary-prompt";
+import { orderAccounts } from "@/lib/account-order";
 import { Tile, TileHeadline } from "@/components/home/tile";
 import { WalletStack } from "@/components/home/wallet-stack";
 import { capState } from "@/lib/cap-state";
@@ -31,6 +33,7 @@ import {
 } from "@/server/queries/overview";
 import {
   listAccountBalances,
+  listCategoriesForUser,
   listTransactions,
 } from "@/server/queries/transactions";
 
@@ -67,6 +70,7 @@ export default async function HomePage() {
     accounts,
     spentThisCycle,
     recent,
+    categories,
   ] = await Promise.all([
     getSpendableBalance(user.id),
     getUpcomingBills(user.id, iso(runsUntil)),
@@ -77,6 +81,7 @@ export default async function HomePage() {
     listAccountBalances(user.id),
     getSpentSince(user.id, iso(cycleStart)),
     listTransactions(user.id, parseTransactionFilters({})),
+    listCategoriesForUser(user.id),
   ]);
 
   const committedCents = bills.reduce(
@@ -130,6 +135,20 @@ export default async function HomePage() {
             usedFraction={usedFraction}
             balanceCents={balanceCents}
             committedCents={committedCents}
+            hasSalary={payday !== null}
+            salaryPrompt={
+              <SalaryPrompt
+                accounts={orderAccounts(accounts)
+                  .filter((account) => account.kind !== "savings")
+                  .map(({ id, name }) => ({ id, name }))}
+                salaryCategoryId={
+                  categories.find(
+                    (category) => category.kind === "income" && category.name === "Salary",
+                  )?.id ?? null
+                }
+                today={iso(today)}
+              />
+            }
           />
         </div>
         <div className="lg:col-span-5">

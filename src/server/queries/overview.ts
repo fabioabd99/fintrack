@@ -43,7 +43,7 @@ export async function getSpendableBalance(userId: string) {
   return opening.cents + movements.cents;
 }
 
-// Next recurring income date, or null (caller falls back to month end).
+// Next salary date, or null (caller falls back to month end).
 export async function getNextPayday(userId: string) {
   const [row] = await db
     .select({ on: recurringRules.nextRunOn })
@@ -52,7 +52,7 @@ export async function getNextPayday(userId: string) {
       and(
         eq(recurringRules.userId, userId),
         eq(recurringRules.active, true),
-        eq(recurringRules.type, "income"),
+        eq(recurringRules.isSalary, true),
         gte(recurringRules.nextRunOn, sql`current_date`),
       ),
     )

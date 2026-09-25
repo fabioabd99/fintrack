@@ -44,6 +44,7 @@ const STANDING = [
     dayOfMonth: 25,
     // salary varies a bit month to month
     varies: true,
+    isSalary: true,
   },
   {
     description: "Streaming subscription",
@@ -180,6 +181,7 @@ export async function seedDemoData(userId: string) {
         amountCents: spec.amountCents,
         frequency: "monthly" as const,
         dayOfMonth: spec.dayOfMonth,
+        isSalary: "isSalary" in spec && spec.isSalary,
         startsOn,
         // first run *after* today, today's occurrence is inserted below
         nextRunOn: nextRunAfter(

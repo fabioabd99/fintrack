@@ -22,6 +22,7 @@ export const recurringRuleInputSchema = z
     weekday: z.number().int().min(0).max(6).nullable().default(null),
     startsOn: z.iso.date(),
     endsOn: z.iso.date().nullable().default(null),
+    isSalary: z.boolean().default(false),
   })
   .refine(
     (value) =>
@@ -31,6 +32,10 @@ export const recurringRuleInputSchema = z
       path: ["amountCents"],
     },
   )
+  .refine((value) => !value.isSalary || value.type === "income", {
+    message: "Only money coming in can be a salary",
+    path: ["isSalary"],
+  })
   .refine((value) => !value.endsOn || value.endsOn >= value.startsOn, {
     message: "The end date cannot be before the start",
     path: ["endsOn"],

@@ -18,6 +18,7 @@ export type RecurringRuleRow = {
   endsOn: string | null;
   nextRunOn: string;
   active: boolean;
+  isSalary: boolean;
   accountId: string;
   accountName: string;
   categoryId: string | null;
@@ -42,6 +43,7 @@ export async function listRecurringRules(
       endsOn: recurringRules.endsOn,
       nextRunOn: recurringRules.nextRunOn,
       active: recurringRules.active,
+      isSalary: recurringRules.isSalary,
       accountId: accounts.id,
       accountName: accounts.name,
       categoryId: categories.id,
@@ -156,12 +158,52 @@ export async function createRecurringRule(
     return null;
   }
 
-  const [row] = await db
-    .insert(recurringRules)
-    .values({ userId, ...input, nextRunOn: input.startsOn })
-    .returning();
+  // only one salary per user, the new one replaces the old
+  return db.transaction(async (tx) => {
+    if (input.isSalary) {
+      await tx
+        .update(recurringRules)
+        .set({ isSalary: false })
+        .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isSalary, true)));
+    }
 
-  return row;
+    const [row] = await tx
+      .insert(recurringRules)
+      .values({ userId, ...input, nextRunOn: input.startsOn })
+      .returning();
+
+    return row;
+  });
+}
+
+export const SALARY_MUST_BE_INCOME = "salary_must_be_income" as const;
+
+// Marks a rule as the salary (unmarking any other) or unmarks it.
+export async function setRuleSalary(userId: string, id: string, isSalary: boolean) {
+  return db.transaction(async (tx) => {
+    const [rule] = await tx
+      .select({ type: recurringRules.type })
+      .from(recurringRules)
+      .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, userId)));
+
+    if (!rule) return null;
+    if (isSalary && rule.type !== "income") return SALARY_MUST_BE_INCOME;
+
+    if (isSalary) {
+      await tx
+        .update(recurringRules)
+        .set({ isSalary: false })
+        .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isSalary, true)));
+    }
+
+    const [row] = await tx
+      .update(recurringRules)
+      .set({ isSalary })
+      .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, userId)))
+      .returning();
+
+    return row;
+  });
 }
 
 export async function setRuleActive(

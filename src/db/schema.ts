@@ -229,12 +229,21 @@ export const recurringRules = pgTable(
     endsOn: date("ends_on"),
     nextRunOn: date("next_run_on").notNull(),
     active: boolean("active").notNull().default(true),
+    // the rule payday is taken from
+    isSalary: boolean("is_salary").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
     index("recurring_rules_user_idx").on(table.userId),
+    uniqueIndex("recurring_rules_one_salary_key")
+      .on(table.userId)
+      .where(sql`${table.isSalary}`),
+    check(
+      "recurring_rules_salary_is_income",
+      sql`NOT ${table.isSalary} OR ${table.type} = 'income'`,
+    ),
     index("recurring_rules_due_idx").on(table.nextRunOn, table.active),
     check(
       "recurring_rules_amount_sign",

@@ -9,6 +9,7 @@ import { Amount } from "@/components/amount";
 import { CategoryIcon } from "@/components/category-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,15 @@ export function RecurringManager({
     router.refresh();
   }
 
+  async function makeSalary(rule: RecurringRuleRow) {
+    await fetch(`/api/v1/recurring-rules/${rule.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isSalary: true }),
+    });
+    router.refresh();
+  }
+
   async function remove(rule: RecurringRuleRow) {
     await fetch(`/api/v1/recurring-rules/${rule.id}`, { method: "DELETE" });
     router.refresh();
@@ -110,6 +120,7 @@ export function RecurringManager({
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 text-base font-medium">
                   <span className="truncate">{rule.description}</span>
+                  {rule.isSalary ? <Badge>Salary</Badge> : null}
                   {!rule.active ? (
                     <Badge variant="secondary">Paused</Badge>
                   ) : null}
@@ -134,6 +145,15 @@ export function RecurringManager({
               </div>
 
               <div className="flex shrink-0 items-center gap-1">
+                {rule.type === "income" && rule.active && !rule.isSalary ? (
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => makeSalary(rule)}
+                  >
+                    Set as salary
+                  </Button>
+                ) : null}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -200,6 +220,7 @@ function RuleDialog({
   const [startsOn, setStartsOn] = useState(
     new Date().toISOString().slice(0, 10),
   );
+  const [isSalary, setIsSalary] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -245,6 +266,7 @@ function RuleDialog({
             : null,
         startsOn,
         endsOn: null,
+        isSalary: direction === "in" && isSalary,
       }),
     });
     setSaving(false);
@@ -427,6 +449,19 @@ function RuleDialog({
               For a monthly item this also sets the day it lands on.
             </FieldDescription>
           </Field>
+
+          {direction === "in" ? (
+            <Field orientation="horizontal">
+              <Checkbox
+                id="rule-salary"
+                checked={isSalary}
+                onCheckedChange={(checked) => setIsSalary(checked === true)}
+              />
+              <FieldLabel htmlFor="rule-salary" className="font-normal">
+                This is my salary. What you can spend is counted until it arrives.
+              </FieldLabel>
+            </Field>
+          ) : null}
         </FieldGroup>
 
         <DialogFooter className="mt-4">

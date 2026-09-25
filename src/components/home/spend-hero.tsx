@@ -16,6 +16,8 @@ export function SpendHero({
   usedFraction,
   balanceCents,
   committedCents,
+  hasSalary,
+  salaryPrompt,
 }: {
   safeToSpendCents: number;
   perDayCents: number;
@@ -25,6 +27,9 @@ export function SpendHero({
   usedFraction: number;
   balanceCents: number;
   committedCents: number;
+  hasSalary: boolean;
+  // shown when there is no salary to count to
+  salaryPrompt?: React.ReactNode;
 }) {
   const elapsedFraction = Math.max(0, cycleDays - daysLeft) / cycleDays;
   const used = Math.max(0, Math.min(1, usedFraction));
@@ -51,8 +56,10 @@ export function SpendHero({
         <strong className="font-semibold text-foreground tabular-nums">
           {formatCents(perDayCents, "EUR")}
         </strong>{" "}
-        a day until payday
+        {hasSalary ? "a day until payday" : "a day until the end of the month"}
       </p>
+
+      {hasSalary ? null : salaryPrompt}
 
       <p
         className={cn(
@@ -78,7 +85,7 @@ export function SpendHero({
         <p className="mt-2 flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
           <span>{Math.round(used * 100)}% of the money used</span>
           <span>
-            {daysLeft} {daysLeft === 1 ? "day" : "days"} to payday
+            {daysLeft} {daysLeft === 1 ? "day" : "days"} {hasSalary ? "to payday" : "left this month"}
           </span>
         </p>
       </div>
@@ -91,7 +98,7 @@ export function SpendHero({
         </div>
         <div className="flex items-baseline justify-between gap-4">
           <dt className="text-muted-foreground">Bills still to pay</dt>
-          <dd className="font-medium tabular-nums">−{formatCents(committedCents, "EUR")}</dd>
+          <dd className="font-medium tabular-nums">{committedCents > 0 ? "−" : ""}{formatCents(committedCents, "EUR")}</dd>
         </div>
       </dl>
     </Tile>

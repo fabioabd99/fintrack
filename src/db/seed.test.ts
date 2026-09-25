@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, test } from "vitest";
 
 import { db } from "@/db";
 import { recurringRules, transactions, users } from "@/db/schema";
+import { getNextPayday } from "@/server/queries/overview";
 
 // Checks on the seeded demo user. Needs the database and `pnpm db:seed`.
 let userId: string | null = null;
@@ -55,6 +56,50 @@ describe.runIf(process.env.DATABASE_URL)("seeded demo data", () => {
 
     for (const { month, count } of months) {
       expect(count, `salaries in ${month}`).toBe(1);
+    }
+  });
+
+  test("payday comes from the salary rule", async () => {
+    if (!userId) return;
+
+    const salaries = await db
+      .select({ nextRunOn: recurringRules.nextRunOn })
+      .from(recurringRules)
+      .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isSalary, true)));
+
+    expect(salaries).toHaveLength(1);
+    expect(await getNextPayday(userId)).toBe(salaries[0].nextRunOn);
+  });
+
+  test("another repeating income is not mistaken for payday", async () => {
+    if (!userId) return;
+
+    const expected = await getNextPayday(userId);
+    const [salary] = await db
+      .select()
+      .from(recurringRules)
+      .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isSalary, true)));
+
+    // weekly side income due tomorrow, well before the salary
+    const tomorrow = format(new Date(Date.now() + 86_400_000), "yyyy-MM-dd");
+    const [extra] = await db
+      .insert(recurringRules)
+      .values({
+        userId,
+        accountId: salary.accountId,
+        description: "Side job",
+        type: "income",
+        amountCents: 5000,
+        frequency: "weekly",
+        startsOn: tomorrow,
+        nextRunOn: tomorrow,
+      })
+      .returning({ id: recurringRules.id });
+
+    try {
+      expect(await getNextPayday(userId)).toBe(expected);
+    } finally {
+      await db.delete(recurringRules).where(eq(recurringRules.id, extra.id));
     }
   });
 });
