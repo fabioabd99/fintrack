@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-// Happy path through the whole stack. Needs the seeded demo user
-// (docker compose up -d && pnpm db:seed).
+// Happy path through the whole stack, starting from "Open the demo".
+// Needs the database running (docker compose up -d).
 test("a signed-in person can record spending and see it counted", async ({
   page,
 }) => {
